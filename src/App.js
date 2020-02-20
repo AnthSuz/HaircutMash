@@ -17,6 +17,7 @@ import ClassementPage from "./containers/ClassementPage";
 function App() {
   const [tabPerson, setTabPerson] = useState([]);
   const [indexCombi, setIndexCombi] = useState(0);
+  const [history, setHistory] = useState([]);
 
   const fetchData = async () => {
     try {
@@ -24,51 +25,94 @@ function App() {
         "https://raw.githubusercontent.com/LeCiseau/Front-end-JSON/master/haircut.json"
       );
       const tabPersonVoted = response.data.map((item, index) => {
-        // On initialise 2 nouvelles propriétés
         item.nbVote = 0;
         item.nbPoint = 0;
         return item;
       });
-      // On stock le tout dans un state
+
       setTabPerson(tabPersonVoted);
     } catch (error) {
       console.log("error");
     }
   };
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const tabCombi = [];
-  // On réalise une double boucle, pour créer des combinaisons de couple et ensuite les comparer
-  for (let a = 0; a < tabPerson.length; a += 1) {
-    for (let b = 0; b < tabPerson.length; b += 1) {
+  for (let a = 0; a < tabPerson.length; a++) {
+    for (let b = 0; b < tabPerson.length; b++) {
       const couple = { a: a, b: b };
       if (a !== b) {
-        tabCombi.push(couple);
+        const item = { proposed: false, couple: couple };
+        tabCombi.push(item);
       }
     }
   }
-
-  // On incrémente le nombre de vote et le nombre de point
   const updatePersonVoted = (indexA, indexB, indexVoted) => {
-    let newTabPerson = [...tabPerson];
-    newTabPerson[indexA].nbVote += 1;
-    newTabPerson[indexB].nbVote += 1;
-    newTabPerson[indexVoted].nbPoint += 1;
-    setTabPerson(newTabPerson);
+    tabPerson[indexA].nbVote++;
+    tabPerson[indexB].nbVote++;
+    tabPerson[indexVoted].nbPoint++;
   };
 
-  // On propose une combinaison différente
-  const getNextCombi = () => {
-    setIndexCombi(indexCombi + 1);
+  // fonction qui retourne un indexCombi qui ne contient pas une tête deja affichées dans les 3 tours précédents
+  const getNextCombi = history => {
+    let nextIndex = indexCombi;
+    let ok = true;
+
+    console.log("debut", nextIndex);
+    do {
+      do {
+        nextIndex++;
+
+        if (nextIndex >= tabCombi.length) {
+          nextIndex = 0;
+          console.log("raz de nextIndex");
+        }
+        // debug
+        if (tabCombi[nextIndex].proposed) {
+          console.log("combi deja faite");
+        }
+      } while (tabCombi[nextIndex].proposed); // on boucle tant qu'on est sur des combinaisons deja proposées
+
+      // regarde si pas dans les 3 derniers
+      ok = true;
+      const coupleProposed = tabCombi[nextIndex].couple;
+      for (let i = history.length - 1; i >= 0 && i >= history.length - 3; i--) {
+        // regarde le couple dans l'historique
+        const coupleHistory = history[i];
+        // la tête est deja sortie ?
+        if (
+          coupleHistory.a === coupleProposed.a ||
+          coupleHistory.b === coupleProposed.b ||
+          coupleHistory.a === coupleProposed.b ||
+          coupleHistory.b === coupleProposed.a
+        ) {
+          ok = false;
+          break;
+        }
+      }
+    } while (!ok);
+
+    setIndexCombi(nextIndex);
   };
 
   const handleVoted = (indexA, indexB, indexVoted) => {
     updatePersonVoted(indexA, indexB, indexVoted);
-    getNextCombi();
+
+    // on dit que cette combinaison a été faite
+    tabCombi[indexCombi].proposed = true;
+
+    // ajoute a l'historique le couple proposé
+    const tempHistory = [...history];
+    const couple = { a: indexA, b: indexB };
+    tempHistory.push(couple);
+    setHistory(tempHistory);
+    console.log("ajout a history");
+
+    getNextCombi(tempHistory);
   };
 
+  useEffect(() => {
+    fetchData();
+  }, []);
   return (
     <>
       <Router>
@@ -81,9 +125,8 @@ function App() {
           <Route path="/VotePage">
             <VotePage
               tabPerson={tabPerson}
-              couple={tabCombi}
+              couple={tabCombi.length > 0 ? tabCombi[indexCombi].couple : null}
               handleVoted={handleVoted}
-              indexCombi={indexCombi}
             />
           </Route>
           <Route>

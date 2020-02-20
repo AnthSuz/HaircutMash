@@ -5,10 +5,10 @@ import Voted from "../components/Voted";
 const VotePage = props => {
   return (
     <>
-      {props.couple.length > 0 && (
+      {props.couple && (
         <Voted
           tabPerson={props.tabPerson}
-          couple={props.couple[props.indexCombi]}
+          couple={props.couple}
           onVoted={props.handleVoted}
         />
       )}
