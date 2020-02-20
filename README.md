@@ -12,3 +12,4 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 - Lance le projet avec `yarn start` ou `npm start`
 
 - Tu peux aussi te rendre directement sur le lien du projet :
+  https://fake-haircutmash.netlify.com/
